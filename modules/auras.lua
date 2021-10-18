@@ -584,6 +584,7 @@ local function renderAura(parent, frame, type, config, displayConfig, index, fil
 
 	-- Enlarge auras
 	if( ( category == "player" and config.enlarge.SELF ) or ( category == "boss" and config.enlarge.BOSS ) or ( config.enlarge.REMOVABLE and ( ( isRemovable and not isFriendly ) or ( curable and canCure[auraType]) ) ) ) then
+		print('Self Scaled renderAura: ', config.enlarge.SELF, name, auraType, spellID)
 		button.isSelfScaled = true
 		button:SetScale(config.selfScale)
 	else
@@ -662,9 +663,11 @@ local function anchorGroupToGroup(frame, config, group, childConfig, childGroup)
 	end
 
 	local position = positionData[childGroup.forcedAnchorPoint or childConfig.anchorPoint]
+	print('side growth: ', position.isSideGrowth)
 	if( position.isSideGrowth ) then
 		position.aura(childGroup.buttons[1], anchorTo)
 	else
+		print('anchorTo: ', anchorTo, 'buttons: ', childGroup.buttons[1])
 		position.column(childGroup.buttons[1], anchorTo, 2)
 	end
 end
