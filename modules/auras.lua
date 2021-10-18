@@ -540,8 +540,12 @@ local function renderAura(parent, frame, type, config, displayConfig, index, fil
 	-- aura filters are all saved as strings, so need to override here
 	local strSpellID = tostring(spellID)
 	-- Do our initial list check to see if we can quick filter it out
-	if( parent.whitelist[type] and not parent.whitelist[name] and not parent.whitelist[strSpellID] ) then return end
-	if( parent.blacklist[type] and ( parent.blacklist[name] or parent.blacklist[strSpellID] ) ) then return end
+	if( parent.whitelist[type] and not parent.whitelist[name] and not parent.whitelist[strSpellID] ) then
+		return
+	end
+	if( parent.blacklist[type] and ( parent.blacklist[name] or parent.blacklist[strSpellID] ) ) then
+		return
+	end
 
 	-- Now do our type filter
 	local category = categorizeAura(type, curable, auraType, caster, isRemovable, canApplyAura, isBossDebuff)
@@ -584,7 +588,7 @@ local function renderAura(parent, frame, type, config, displayConfig, index, fil
 
 	-- Enlarge auras
 	if( ( category == "player" and config.enlarge.SELF ) or ( category == "boss" and config.enlarge.BOSS ) or ( config.enlarge.REMOVABLE and ( ( isRemovable and not isFriendly ) or ( curable and canCure[auraType]) ) ) ) then
-		print('Self Scaled renderAura: ', config.enlarge.SELF, name, auraType, spellID)
+		-- print('Self Scaled renderAura: ', config.enlarge.SELF, name, auraType, spellID)
 		button.isSelfScaled = true
 		button:SetScale(config.selfScale)
 	else
@@ -610,6 +614,75 @@ local function renderAura(parent, frame, type, config, displayConfig, index, fil
 	button:Show()
 end
 
+local DEBUFF_PRIO = {
+	-- Debuff Name, Spell ID, Self_Debuff
+	{'Banish', nil, true, 99},
+	{'Death Coil', 27223, true, 98},
+
+	{'Seed of Corruption', 27243, true, 89},
+	{'Curse of Doom', 30910, true, 88},
+	{'Curse of the Elements', 27228, true, 88},
+	{'Curse of Recklessness', 27226, true, 88},
+
+	{'Curse of Agony', 27218, true, 88}, -- Rank 7
+	{'Curse of Agony', 980, true, 88}, -- Rank 1
+	{'Curse of Tongues', 11719, true, 88},
+	{'Curse of Exhaustion', 18223, true, 88},
+
+	{'Corruption', 27216, true, 79},
+	{'Unstable Affliction', nil, true, 78},
+	{'Immolate', 27215, true, 77},
+	{'Siphon Life', 30911, true, 76},
+	{'Fear', 6215, true, 75},
+	{'Howl of Terror', 17928, true, 74},
+
+	{'Drain Life', 27220, true, 69},
+	{'Drain Mana', 30908, true, 69},
+	{'Drain Soul', 27217, true, 69},
+
+	{'Shadow Embrace', 32386, true, 50},
+	{'Improved Shadow Bolt', nil, true, 49},
+
+	-- Rogue Starts here.
+	{'Sap', 11297, true, 61},
+	{'Blind', 2094, true, 60},
+	{'Gouge', 38764, true, 58},
+	{'Kidney Shot', 8643, true, 57},
+	{'Cheap Shot', 1833, true, 56},
+
+	{'Garrote - Silence', 1330, true, 55},
+	{'Wound Poison', 27189, true, 54},
+	{'Crippling Poison', 11201, true, 53},
+	{'Expose Armor', 26866, true, 52},
+	{'Deadly Throw', 26679, true, 51},
+	{'Rupture', 26867, true, 50},
+
+	{'Garrote', 26884, true, 49},
+
+	{'Hemorrhage', 26864, true, 20},
+}
+
+local function find_prio(spell_name, caster, spell_id)
+	local is_self = playerUnits[caster]
+	for _, v in pairs(DEBUFF_PRIO) do
+		if (is_self and v[3]) and (v[2] ~= nil and v[2] == spell_id) then
+			-- Match By Spell ID
+			return v[4]
+		end
+		if (is_self and v[3]) and (v[1] == spell_name) then
+			-- Match By Name: Don't prefer since string compare is likely slow.
+			print('prio_name: ', spell_name, spell_id)
+			return v[4]
+		end
+	end
+	if is_self then
+		-- Always Put our own Debuffs before others.
+		print('prio_none: ', spell_name, spell_id)
+		return 20
+	end
+	-- Default Priority of everything is ZERO.
+	return 0
+end
 
 -- Scan for auras
 local function scan(parent, frame, type, config, displayConfig, filter)
@@ -617,18 +690,34 @@ local function scan(parent, frame, type, config, displayConfig, filter)
 
 	-- UnitIsFriend returns true during a duel, which breaks stealable/curable detection
 	local isFriendly = not UnitIsEnemy(frame.parent.unit, "player")
-	local curable = (isFriendly and type == "debuffs")
+	local is_debuffs = (type == "debuffs")
+	local is_target_frame = (frame.parent.unit == 'target')
+	local curable = (isFriendly and is_debuffs)
 	local index = 0
+	local all_auras = {}
 	while( true ) do
 		index = index + 1
 		local name, texture, count, auraType, duration, endTime, caster, isRemovable, nameplateShowPersonal, spellID, canApplyAura, isBossDebuff = parent.auraFunc(frame.parent.unit, index, filter)
 		if( not name ) then break end
 
-		renderAura(parent, frame, type, config, displayConfig, index, filter, isFriendly, curable, name, texture, count, auraType, duration, endTime, caster, isRemovable, nameplateShowPersonal, spellID, canApplyAura, isBossDebuff)
-
+		local prio = 0
+		if (is_debuffs and is_target_frame) then
+			prio = find_prio(name, caster, spellID)
+		end
+		table.insert(all_auras, {prio, index, name, texture, count, auraType, duration, endTime, caster, isRemovable, nameplateShowPersonal, spellID, canApplyAura, isBossDebuff})
 		-- Too many auras shown, break out
 		-- Get down
 		if( frame.totalAuras >= frame.maxAuras ) then break end
+	end
+	-- Sort on 'prio'
+	table.sort(all_auras, function(left, right)
+		return left[1] > right[1]
+	end)
+	for _, v in pairs(all_auras) do
+		-- prio, name, auraType, caster, spellID
+		-- print('scan: ', v[1], ' \'', v[3], '\'', v[6], v[9], v[12])
+		-- renderAura(parent, frame, type, config, displayConfig, index, filter, isFriendly, curable, name, texture, count, auraType, duration, endTime, caster, isRemovable, nameplateShowPersonal, spellID, canApplyAura, isBossDebuff)
+		renderAura(parent, frame, type, config, displayConfig, v[2], filter, isFriendly, curable, v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12], v[13], v[14])
 	end
 
 	for i=frame.totalAuras + 1, #(frame.buttons) do frame.buttons[i]:Hide() end
@@ -663,11 +752,11 @@ local function anchorGroupToGroup(frame, config, group, childConfig, childGroup)
 	end
 
 	local position = positionData[childGroup.forcedAnchorPoint or childConfig.anchorPoint]
-	print('side growth: ', position.isSideGrowth)
+	-- print('side growth: ', position.isSideGrowth)
 	if( position.isSideGrowth ) then
 		position.aura(childGroup.buttons[1], anchorTo)
 	else
-		print('anchorTo: ', anchorTo, 'buttons: ', childGroup.buttons[1])
+		-- print('anchorTo: ', anchorTo, 'buttons: ', childGroup.buttons[1])
 		position.column(childGroup.buttons[1], anchorTo, 2)
 	end
 end

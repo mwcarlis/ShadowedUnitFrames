@@ -181,7 +181,7 @@ function ShadowUF:CheckUpgrade()
 
 	if( revision <= 56 ) then
 		-- new classes
-		self.db.profile.classColors.DEMONHUNTER = {r = 0.64, g = 0.19, b = 0.79}
+		-- self.db.profile.classColors.DEMONHUNTER = {r = 0.64, g = 0.19, b = 0.79}
 
 		-- new power types
 		self.db.profile.powerColors.INSANITY = {r = 0.40, g = 0, b = 0.80}
@@ -482,16 +482,18 @@ function ShadowUF:LoadUnitDefaults()
 			["c"] = {boss = {priority = 100}, curable = {priority = 100}},
 		},
 		auras = {
-			-- None of these defaults work in TBC, leave them as an example.
 			-- ["20707"] = [[{indicator = '', group = "Warlock", priority = 10, r = 0.42, g = 0.21, b = 0.65}]],
 			-- ["116849"] = [[{r=0.19607843137255, group="Monk", indicator="c", g=1, player=false, duration=true, b=0.3843137254902, alpha=1, priority=0, icon=true, iconTexture="Interface\\Icons\\ability_monk_chicocoon"}]],
 			-- ["155777"] = [[{r=0.57647058823529, group="Druid", indicator="tr", g=0.28235294117647, player=true, duration=true, b=0.6156862745098, priority=100, alpha=1, iconTexture="Interface\\Icons\\Spell_Nature_Rejuvenation"}]],
 			-- ["121176"] = [[{alpha=1, b=0, priority=0, r=0.062745098039216, group="PvP Flags", indicator="bl", g=1, iconTexture="Interface\\Icons\\INV_BannerPVP_03"}]],
+			-- ["19705"] = [[{r=0.80392156862745, group="Food", indicator="", g=0.76470588235294, missing=true, duration=true, priority=0, alpha=1, b=0.24313725490196}]],
 		}
 	}
 
 	for classToken in pairs(RAID_CLASS_COLORS) do
-		self.defaults.profile.auraIndicators.disabled[classToken] = {}
+		if not (classToken == 'DEMONHUNTER' or classToken == 'MONK' or classToken == 'DEATHKNIGHT') then
+			self.defaults.profile.auraIndicators.disabled[classToken] = {}
+		end
 	end
 end
 
@@ -619,12 +621,12 @@ end
 local active_hiddens = {}
 function ShadowUF:HideBlizzardFrames()
 	if( self.db.profile.hidden.cast and not active_hiddens.cast ) then
-		print('hideen cast')
+		-- print('hidden cast')
 		hideBlizzardFrames(true, CastingBarFrame, PetCastingBarFrame)
 	end
 
 	if( self.db.profile.hidden.party and not active_hiddens.party ) then
-		print('hidden party')
+		-- print('hidden party')
 		for i=1, MAX_PARTY_MEMBERS do
 			local name = "PartyMemberFrame" .. i
 			hideBlizzardFrames(false, _G[name], _G[name .. "HealthBar"], _G[name .. "ManaBar"])
@@ -635,14 +637,14 @@ function ShadowUF:HideBlizzardFrames()
 
 		-- This just makes sure
 		if( CompactPartyFrame ) then
-			print('compact party')
+			-- print('compact party')
 			hideBlizzardFrames(false, CompactPartyFrame)
 		end
 	end
 
 	if( CompactRaidFrameManager ) then
 		if( self.db.profile.hidden.raid and not active_hiddens.raidTriggered ) then
-			print('hidden raid')
+			-- print('hidden raid')
 			active_hiddens.raidTriggered = true
 
 			local function hideRaid()
@@ -670,12 +672,12 @@ function ShadowUF:HideBlizzardFrames()
 	end
 
 	if( self.db.profile.hidden.buffs and not active_hiddens.buffs ) then
-		print('hidden buffs')
+		-- print('hidden buffs')
 		hideBlizzardFrames(false, BuffFrame, TemporaryEnchantFrame)
 	end
 
 	if( self.db.profile.hidden.player and not active_hiddens.player ) then
-		print('hidden player')
+		-- print('hidden player')
 		hideBlizzardFrames(false, PlayerFrame)
 
 		-- We keep these in case someone is still using the default auras, otherwise it messes up vehicle stuff
@@ -686,22 +688,22 @@ function ShadowUF:HideBlizzardFrames()
 	end
 
 	if( self.db.profile.hidden.pet and not active_hiddens.pet ) then
-		print('hidden pet')
+		-- print('hidden pet')
 		hideBlizzardFrames(false, PetFrame)
 	end
 
 	if( self.db.profile.hidden.target and not active_hiddens.target ) then
-		print('hidden target')
+		-- print('hidden target')
 		hideBlizzardFrames(false, TargetFrame, ComboFrame, TargetFrameToT)
 	end
 
 	if( self.db.profile.hidden.focus and not active_hiddens.focus and FocusFrame and FocusFrameToT ) then
-		print('hidden focus')
+		-- print('hidden focus')
 		hideBlizzardFrames(false, FocusFrame, FocusFrameToT)
 	end
 
 	if( self.db.profile.hidden.boss and not active_hiddens.boss ) then
-		print('hidden boss')
+		-- print('hidden boss')
 		for i=1, MAX_BOSS_FRAMES do
 			local name = "Boss" .. i .. "TargetFrame"
 			hideBlizzardFrames(false, _G[name], _G[name .. "HealthBar"], _G[name .. "ManaBar"])
