@@ -1382,7 +1382,9 @@ local function loadGeneralOptions()
 	}
 
 	for classToken in pairs(RAID_CLASS_COLORS) do
-		options.args.general.args.color.args.classColors.args[classToken] = Config.classTable
+		if not (classToken == 'DEMONHUNTER' or classToken == 'MONK' or classToken == 'DEATHKNIGHT') then
+			options.args.general.args.color.args.classColors.args[classToken] = Config.classTable
+		end
 	end
 
 	options.args.general.args.color.args.classColors.args.PET = Config.classTable
@@ -6464,7 +6466,19 @@ local function loadAuraIndicatorsOptions()
 		order = 1,
 		type = "group",
 		name = function(info)
-			return ShadowUF:Hex(ShadowUF.db.profile.classColors[info[#(info)]]) .. LOCALIZED_CLASS_NAMES_MALE[info[#(info)]] .. "|r"
+			hard_name = info[#(info)]
+			local name = LOCALIZED_CLASS_NAMES_MALE[info[#(info)]]
+			if name == nil and hard_name == 'DEMONHUNTER' then
+				return 'Demonhunter'
+			end
+			if name == nil and hard_name == 'MONK' then
+				return 'Monk'
+			end
+			if name == nil and hard_name == 'DEATHKNIGHT' then
+				return 'Deathknight'
+			end
+			local thing = ShadowUF:Hex(ShadowUF.db.profile.classColors[info[#(info)]]) .. LOCALIZED_CLASS_NAMES_MALE[info[#(info)]] .. "|r"
+			return thing
 		end,
 		args = {},
 	}
@@ -6568,7 +6582,9 @@ local function loadAuraIndicatorsOptions()
 
 	-- Build class status thing
 	for classToken in pairs(RAID_CLASS_COLORS) do
-		options.args.auraIndicators.args.classes.args[classToken] = classTable
+		if not (classToken == 'DEMONHUNTER' or classToken == 'MONK' or classToken == 'DEATHKNIGHT') then
+			options.args.auraIndicators.args.classes.args[classToken] = classTable
+		end
 	end
 
 	-- Quickly build the indicator one
